@@ -6,6 +6,8 @@ from pathlib import Path
 import git as gitpython
 import pytest
 
+from baseliner.models.result import CheckResult, CheckStatus, RepoResult
+
 
 @pytest.fixture
 def fixtures_dir() -> Path:
@@ -53,3 +55,30 @@ def stale_repo(tmp_path: Path) -> Path:
         commit_date=git_timestamp,
     )
     return tmp_path
+
+
+@pytest.fixture
+def sample_repo_result() -> RepoResult:
+    return RepoResult(
+        slug="test-org/my-repo",
+        timestamp=datetime.now(tz=UTC),
+        score=0.7,
+        results=[
+            CheckResult(
+                check_id="readme_exists",
+                status=CheckStatus.PASS,
+                severity="critical",
+            ),
+            CheckResult(
+                check_id="ci_present",
+                status=CheckStatus.FAIL,
+                severity="high",
+                message="No CI found",
+            ),
+            CheckResult(
+                check_id="default_branch_is_main",
+                status=CheckStatus.SKIP,
+                severity="medium",
+            ),
+        ],
+    )

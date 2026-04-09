@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from datetime import UTC, datetime
 from enum import StrEnum
 from pathlib import Path
@@ -191,10 +192,34 @@ def scan(
         print_summary(run_result)
 
     if open_issues:
-        if not dry_run:
-            typer.echo("--open-issues: not yet implemented", err=True)
-        else:
-            typer.echo("[dry-run] --open-issues: would open issues (not yet implemented)")
+        from baseliner.actions.github_issues import GitHubIssueAction
+
+        token_env = cfg.scope.github.token_env if cfg.scope.github else "GITHUB_TOKEN"
+        token = os.environ.get(token_env, "").strip()
+        if not token:
+            typer.echo(f"--open-issues requires a GitHub token in '{token_env}'", err=True)
+            raise typer.Exit(2)
+
+        action = GitHubIssueAction(token=token, dry_run=dry_run)
+        source_map = {source.slug: source for source in sources}
+        logger = logging.getLogger(__name__)
+
+        for repo_result in run_result.repos:
+            source = source_map.get(repo_result.slug)
+            if source is None or source.pygithub_repo is None:
+                logger.warning(
+                    "Cannot open issue for '%s': no GitHub repo reference available",
+                    repo_result.slug,
+                )
+                continue
+            try:
+                action.run(repo_result, source.pygithub_repo)
+            except Exception:  # noqa: BLE001
+                logger.warning(
+                    "Failed to open/update issue for '%s'",
+                    repo_result.slug,
+                    exc_info=True,
+                )
 
     if run_result.failed > 0:
         raise typer.Exit(1)
