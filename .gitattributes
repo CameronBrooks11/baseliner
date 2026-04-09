@@ -1,0 +1,16 @@
+# Enforce consistent line endings across platforms.
+* text=auto eol=lf
+
+# Keep Windows-native scripts with CRLF.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Treat common binary assets as binary.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.zip binary
